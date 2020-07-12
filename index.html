@@ -1,0 +1,245 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+
+<script>
+const CSS_COLOR_NAMES = [
+  "Black",
+  "Aqua",
+  "AntiqueWhite",
+  "AliceBlue",
+  "Aquamarine",
+  "Azure",
+  "Beige",
+  "Bisque",
+  "BlanchedAlmond",
+  "Blue",
+  "BlueViolet",
+  "Brown",
+  "BurlyWood",
+  "CadetBlue",
+  "Chartreuse",
+  "Chocolate",
+  "Coral",
+  "CornflowerBlue",
+  "Cornsilk",
+  "Crimson",
+  "Cyan",
+  "DarkBlue",
+  "DarkCyan",
+  "DarkGoldenRod",
+  "DarkGray",
+  "DarkGreen",
+  "DarkKhaki",
+  "DarkMagenta",
+  "DarkOliveGreen",
+  "DarkOrange",
+  "DarkOrchid",
+  "DarkRed",
+  "DarkSalmon",
+  "DarkSeaGreen",
+  "DarkSlateBlue",
+  "DarkSlateGray",
+  "DarkTurquoise",
+  "DarkViolet",
+  "DeepPink",
+  "DeepSkyBlue",
+  "DimGray",
+  "DimGrey",
+  "DodgerBlue",
+  "FireBrick",
+  "FloralWhite",
+  "ForestGreen",
+  "Fuchsia",
+  "Gainsboro",
+  "GhostWhite",
+  "Gold",
+  "GoldenRod",
+  "Gray",
+  "Grey",
+  "Green",
+  "GreenYellow",
+  "HoneyDew",
+  "HotPink",
+  "IndianRed",
+  "Indigo",
+  "Ivory",
+  "Khaki",
+  "Lavender",
+  "LavenderBlush",
+  "LawnGreen",
+  "LemonChiffon"];
+</script>
+
+<title>Pixel Art Maker</title>
+<style>
+  body{
+    margin-top: 20px;   
+    background-color : lightgray;
+  }
+  .main{
+    width: 820px;
+    background-color : #eeeeee;
+    border: 1px solid #aaaaaa;
+    border-radius: 16px; /* rounds corners */
+    display: grid;
+  }
+  .field{
+    margin : 10px;
+    display: grid;
+    grid-template-rows: repeat(3, 12px);
+    grid-template-columns: repeat(3, 12px);
+    grid-gap: 2px;
+    justify-content: center;
+  }
+  .cell{
+    background-color: white;
+  }
+  .palette{
+    align-self: end;
+    margin: 10px;  
+  }
+  .circle{
+    width: 24px;
+    height: 24px;	
+    border-radius: 12px;
+    display: inline-block;
+  }
+  .colorbox{
+    width: 48px;
+    height: 24px;	
+    display: inline-block;
+    background-color:black;
+  }
+  .label{
+    color: gray;
+    display: inline-block;
+    transform: translate(0, -30%);
+  }
+  .floodfill{
+    color: gray;
+    display: inline-block;
+    transform: translate(0, -30%);
+  }
+  .color{
+    display: inline-block;
+    transform: translate(0, -10%);
+  }
+  .buttons{
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body ondragstart="return false;">
+  <center>
+    <div class="main">
+
+      <div class=buttons><input type=button value="Save" id="saveButton">
+      <input type=button value="Load" id="loadButton"></div>
+
+      <div class = "field" id = "field">
+        <div class=cell></div> <div class=cell></div> <div class=cell></div>
+        <div class=cell></div> <div class=cell></div> <div class=cell></div>
+        <div class=cell></div> <div class=cell></div> <div class=cell></div>
+      </div>
+
+      <div class = "palette" id = "palette">
+        <div class=circle style="background-color:green"></div>
+        <div class=circle style="background-color:red"></div>
+        <div class=circle style="background-color:blue"></div>
+        <div class=circle style="background-color:black"></div>
+        <div class=circle style="background-color:orange"></div>
+      </div>
+
+    </div>
+  </center>
+
+  <script>
+    const nrows = 24;
+    const ncols = 40;
+    field.style["grid-template-rows"] = `repeat(${nrows}, 14px)`;
+    field.style["grid-template-columns"] = `repeat(${ncols}, 14px)`;
+    let s = "";
+    for(let i = 0; i < nrows; i++) {
+      for(let j = 0; j < ncols; j++) {
+        s += `<div class=cell row=${i} col=${j} id=cell_${i}_${j}></div>`;
+      }
+    }
+    field.innerHTML = s;
+    pal = '';
+    for (let col of CSS_COLOR_NAMES){
+      pal += `<div class=circle style="background-color:${col}"></div>`;
+    }
+    pal += "<div class=label>&nbsp;&nbsp;CURRENT COLOR:&nbsp;</div><div class=colorbox id=currentColor style='background-color: black'></div>";
+    pal += "<div class=label>&nbsp;&nbsp;SELECT COLOR:&nbsp;</div><div class=color><input type=color id=colorSelector></div><div class=floodfill>&nbsp; Hint: flood fill with right click</div>";
+
+    palette.innerHTML = pal;
+    
+    palette.addEventListener("click", function(e){
+      if (e.target.className == 'circle') {
+        currentColor.style["background-color"] = e.target.style["background-color"];
+      }
+    });
+
+    function btn(e) {
+      if (e.buttons == null)
+        return e.which;
+      else
+        return e.buttons;
+    }
+
+    field.addEventListener("contextmenu", function(e){
+        e.preventDefault();
+    });
+
+
+    field.addEventListener("mousemove", function(e){
+      if (e.target.className == 'cell' && btn(e) == 1) {
+        e.target.style["background-color"] = currentColor.style["background-color"];
+      }   
+    });
+
+    function floodfill(cell, color) {
+      if (cell.style["background-color"] != color) return;
+      cell.style["background-color"] = currentColor.style["background-color"];
+      let row = parseInt(cell.attributes["row"].nodeValue);
+      let col = parseInt(cell.attributes["col"].nodeValue);
+      if (row > 0) {
+        let nxt = document.getElementById(`cell_${row-1}_${col}`)
+        if (nxt) floodfill(nxt, color);
+      }
+      if (col > 0) {
+        let nxt = document.getElementById(`cell_${row}_${col-1}`)
+        if (nxt) floodfill(nxt, color);
+      }
+      let nxt = document.getElementById(`cell_${row+1}_${col}`)
+      if (nxt) floodfill(nxt, color);
+      nxt = document.getElementById(`cell_${row}_${col+1}`)
+      if (nxt) floodfill(nxt, color);
+    }
+
+    field.addEventListener("mousedown", function(e){
+      if (e.target.className == 'cell' && btn(e) == 2) {
+        floodfill(e.target, e.target.style["background-color"]);
+      }
+      else if (e.target.className == 'cell' && btn(e) == 1) {
+        e.target.style["background-color"] = currentColor.style["background-color"];      
+      }
+    });
+
+    colorSelector.addEventListener("change", function(e){
+      currentColor.style["background-color"] = e.target.value;
+    });
+
+    saveButton.addEventListener("click", function(e) {      
+      localStorage.setItem('field', field.innerHTML);
+    });
+
+    loadButton.addEventListener("click", function(e) {      
+      field.innerHTML = localStorage.getItem('field');
+    });
+
+  </script>
+
+</body>
+</html>
